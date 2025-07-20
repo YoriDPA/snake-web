@@ -49,8 +49,40 @@ body {
     overflow: hidden;
     font-family: var(--el-font-family);
 }
+
 #gameCanvas {
     border: 1px solid var(--el-color-white);
     touch-action: none;
     transition: var(--el-transition-all);
+}
+
+/* Container que empilha o título e o jogo */
+#app-container {
+  display: flex;
+  flex-direction: column; /* Empilha os itens verticalmente */
+  align-items: center;    /* Centraliza os itens horizontalmente */
+}
+
+/* Estilo do título "Yori" */
+#game-title {
+    color: white;
+    font-size: 2.5em;
+    font-family: 'Helvetica Neue', sans-serif;
+    margin: 0;
+    margin-bottom: 15px; /* Cria o espaço entre o título e a borda do jogo */
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* --- NOVO ESTILO ADICIONADO NO FINAL --- */
+
+/* Estilo para o contador de jogadores */
+#player-count {
+    color: #a9a9a9; /* Um cinza claro para diferenciar do título */
+    font-size: 1em;
+    font-family: 'Helvetica Neue', sans-serif;
+    margin: -10px 0 15px 0; /* Ajusta as margens para ficar bonito */
+    text-align: center;
 }

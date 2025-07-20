@@ -3,7 +3,6 @@ const WebSocket = require('ws');
 // A porta foi alterada para 8081 para evitar conflitos
 const server = new WebSocket.Server({ port: process.env.PORT || 8081 });
 
-// Definir um tamanho fixo para o grid do jogo
 const GRID_WIDTH = 40;
 const GRID_HEIGHT = 30;
 
@@ -17,17 +16,14 @@ function createNewFood() {
     };
 }
 
-// Iniciar com uma comida na tela
 foods.push(createNewFood());
 
 server.on('connection', (ws) => {
     const playerId = Math.random().toString(36).substr(2, 9);
     console.log(`Player ${playerId} conectado.`);
     
-    // Envia o ID para o novo jogador
     ws.send(JSON.stringify({ playerId }));
 
-    // Cria a cobra para o novo jogador
     snakes[playerId] = { 
         segments: [{ x: 10, y: 10 }], 
         dx: 1, 
@@ -40,7 +36,6 @@ server.on('connection', (ws) => {
             const data = JSON.parse(msg);
             if (data.type === 'move' && snakes[data.playerId]) {
                 const snake = snakes[data.playerId];
-                // Impede a cobra de se mover para a direção oposta instantaneamente
                 if ((data.dx !== 0 && snake.dx !== -data.dx) || (data.dy !== 0 && snake.dy !== -data.dy)) {
                     snake.dx = data.dx;
                     snake.dy = data.dy;
@@ -57,22 +52,18 @@ server.on('connection', (ws) => {
     });
 });
 
-// Game Loop - Roda no servidor
 setInterval(() => {
     for (let id in snakes) {
         let snake = snakes[id];
         let head = { x: snake.segments[0].x + snake.dx, y: snake.segments[0].y + snake.dy };
 
-        // Lógica de colisão com a parede
         if (head.x < 0 || head.x >= GRID_WIDTH || head.y < 0 || head.y >= GRID_HEIGHT) {
-            // Reinicia a cobra em caso de colisão
             snakes[id].segments = [{ x: 10, y: 10 }];
             continue;
         }
 
         snake.segments.unshift(head);
 
-        // Lógica de colisão com a comida
         let ateComida = false;
         foods.forEach((food, index) => {
             if (head.x === food.x && head.y === food.y) {
@@ -86,8 +77,11 @@ setInterval(() => {
         }
     }
 
-    // Envia o estado atual do jogo para todos os clientes
-    const gameState = JSON.stringify({ snakes, foods });
+    // --- ALTERAÇÃO AQUI ---
+    // Adicionamos a contagem de jogadores ao estado do jogo
+    const playerCount = server.clients.size;
+    const gameState = JSON.stringify({ snakes, foods, playerCount });
+
     server.clients.forEach(client => {
         if (client.readyState === WebSocket.OPEN) {
             client.send(gameState);

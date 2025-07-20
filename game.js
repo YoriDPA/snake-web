@@ -1,5 +1,7 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+// --- ALTERAÇÃO AQUI ---
+const countElement = document.getElementById('count'); // Pega o elemento do contador
 
 const ws = new WebSocket('wss://snake-online-3wex.onrender.com');
 
@@ -26,6 +28,12 @@ ws.onmessage = (event) => {
             snakes = data.snakes;
             foods = data.foods;
         }
+        // --- ALTERAÇÃO AQUI ---
+        // Atualiza o contador de jogadores na tela
+        if (data.playerCount !== undefined) {
+            countElement.textContent = data.playerCount;
+        }
+
     } catch (error) {
         console.error('Erro ao receber dados do servidor:', error);
     }
@@ -37,30 +45,25 @@ ws.onerror = (error) => {
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // Desenha todas as cobras
     for (let id in snakes) {
-        const snake = snakes[id]; // Pequena correção aqui
+        const snake = snakes[id];
         ctx.fillStyle = snake.color;
         snake.segments.forEach(seg => {
             ctx.fillRect(seg.x * TILE_SIZE, seg.y * TILE_SIZE, TILE_SIZE - 1, TILE_SIZE - 1);
         });
     }
-
-    // --- Alteração: Comida agora é um círculo ---
     ctx.fillStyle = 'red';
     foods.forEach(food => {
         const centerX = food.x * TILE_SIZE + TILE_SIZE / 2;
         const centerY = food.y * TILE_SIZE + TILE_SIZE / 2;
         const radius = TILE_SIZE / 2;
-
-        ctx.beginPath(); // Começa a desenhar
-        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI); // Cria o arco (círculo)
-        ctx.fill(); // Preenche com a cor vermelha
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+        ctx.fill();
     });
 }
 
-
-// --- Controles para Teclado (Computador) ---
+// Controles... (o resto do arquivo continua igual)
 document.addEventListener('keydown', (e) => {
     if (!playerId) return;
     let dx = 0, dy = 0;
@@ -74,36 +77,25 @@ document.addEventListener('keydown', (e) => {
     ws.send(JSON.stringify({ type: 'move', playerId, dx, dy }));
 });
 
-// --- Controles para Toque/Deslize (Celular) ---
 let touchStartX = 0;
 let touchStartY = 0;
-
 document.addEventListener('touchstart', (e) => {
-    if (e.target === canvas) {
-        e.preventDefault();
-    }
+    if (e.target === canvas) e.preventDefault();
     touchStartX = e.changedTouches[0].clientX;
     touchStartY = e.changedTouches[0].clientY;
 }, { passive: false });
-
 document.addEventListener('touchend', (e) => {
-    if (e.target === canvas) {
-        e.preventDefault();
-    }
+    if (e.target === canvas) e.preventDefault();
     if (!playerId) return;
-
     const touchEndX = e.changedTouches[0].clientX;
     const touchEndY = e.changedTouches[0].clientY;
     handleSwipe(touchEndX, touchEndY);
 }, { passive: false });
-
 function handleSwipe(touchEndX, touchEndY) {
     const deltaX = touchEndX - touchStartX;
     const deltaY = touchEndY - touchStartY;
     const swipeThreshold = 30;
-
     let dx = 0, dy = 0;
-
     if (Math.abs(deltaX) > Math.abs(deltaY)) {
         if (Math.abs(deltaX) > swipeThreshold) {
             dx = (deltaX > 0) ? 1 : -1;
@@ -115,10 +107,8 @@ function handleSwipe(touchEndX, touchEndY) {
             dy = (deltaY > 0) ? 1 : -1;
         }
     }
-
     if (dx !== 0 || dy !== 0) {
         ws.send(JSON.stringify({ type: 'move', playerId, dx, dy }));
     }
 }
-
 setInterval(draw, 60);
