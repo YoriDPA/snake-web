@@ -1,8 +1,8 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// A porta foi alterada para 8081 para combinar com o servidor
-const ws = new WebSocket('ws://localhost:8081');
+// --- A LINHA ABAIXO FOI ATUALIZADA COM SEU ENDEREÇO ONLINE ---
+const ws = new WebSocket('wss://snake-online-3wex.onrender.com');
 
 const TILE_SIZE = 20; // Tamanho de cada "quadrado" do jogo
 
@@ -21,7 +21,7 @@ resizeCanvas();
 
 // --- Conexão com o Servidor ---
 ws.onopen = () => {
-    console.log('Conectado ao servidor com sucesso!');
+    console.log('Conectado ao servidor online com sucesso!');
 };
 
 ws.onclose = () => {
@@ -45,7 +45,7 @@ ws.onmessage = (event) => {
 
 ws.onerror = (error) => {
     console.error('Erro no WebSocket:', error);
-    alert('Não foi possível conectar ao servidor do jogo. Verifique se o servidor (node server.js) está rodando.');
+    alert('Não foi possível conectar ao servidor do jogo. O servidor pode estar offline ou reiniciando.');
 };
 
 
