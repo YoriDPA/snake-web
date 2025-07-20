@@ -1,62 +1,84 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// Ajustar tamanho para dispositivos
-function resizeCanvas() {
-    canvas.width = window.innerWidth * 0.8;
-    canvas.height = window.innerHeight * 0.8;
-}
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
+// A porta foi alterada para 8081 para combinar com o servidor
+const ws = new WebSocket('ws://localhost:8081');
 
-const ws = new WebSocket('ws://seu-projeto.up.railway.app'); // Substitua pelo URL do Railway
+const TILE_SIZE = 20; // Tamanho de cada "quadrado" do jogo
+
 let playerId = null;
 let snakes = {};
 let foods = [];
 
-ws.onopen = () => console.log('Conectado ao servidor');
-ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    if (data.playerId) playerId = data.playerId;
-    snakes = data.snakes;
-    foods = data.foods;
+// Função para ajustar o tamanho do canvas
+function resizeCanvas() {
+    canvas.width = Math.floor(window.innerWidth * 0.8 / TILE_SIZE) * TILE_SIZE;
+    canvas.height = Math.floor(window.innerHeight * 0.8 / TILE_SIZE) * TILE_SIZE;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+
+// --- Conexão com o Servidor ---
+ws.onopen = () => {
+    console.log('Conectado ao servidor com sucesso!');
 };
 
-let dx = 0, dy = 0;
+ws.onclose = () => {
+    console.log('Desconectado do servidor.');
+};
 
+ws.onmessage = (event) => {
+    try {
+        const data = JSON.parse(event.data);
+        if (data.playerId) {
+            playerId = data.playerId;
+        }
+        if (data.snakes && data.foods) {
+            snakes = data.snakes;
+            foods = data.foods;
+        }
+    } catch (error) {
+        console.error('Erro ao receber dados do servidor:', error);
+    }
+};
+
+ws.onerror = (error) => {
+    console.error('Erro no WebSocket:', error);
+    alert('Não foi possível conectar ao servidor do jogo. Verifique se o servidor (node server.js) está rodando.');
+};
+
+
+// --- Desenho do Jogo ---
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     for (let id in snakes) {
-        ctx.fillStyle = snakes[id].color;
-        snakes[id].segments.forEach((seg, i) => {
-            ctx.fillRect(seg.x * 20, seg.y * 20, 18, 18);
+        const snake = snakes[id];
+        ctx.fillStyle = snake.color;
+        snake.segments.forEach(seg => {
+            ctx.fillRect(seg.x * TILE_SIZE, seg.y * TILE_SIZE, TILE_SIZE - 1, TILE_SIZE - 1);
         });
     }
     ctx.fillStyle = 'red';
-    foods.forEach(food => ctx.fillRect(food.x * 20, food.y * 20, 18, 18));
+    foods.forEach(food => {
+        ctx.fillRect(food.x * TILE_SIZE, food.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+    });
 }
 
-// Controles para teclado (computador)
+
+// --- Controles do Jogador ---
 document.addEventListener('keydown', (e) => {
     if (!playerId) return;
+    let dx = 0, dy = 0;
     switch (e.key) {
-        case 'ArrowUp': if (dy === 0) { dx = 0; dy = -1; ws.send(JSON.stringify({ type: 'move', playerId, dx, dy })); } break;
-        case 'ArrowDown': if (dy === 0) { dx = 0; dy = 1; ws.send(JSON.stringify({ type: 'move', playerId, dx, dy })); } break;
-        case 'ArrowLeft': if (dx === 0) { dx = -1; dy = 0; ws.send(JSON.stringify({ type: 'move', playerId, dx, dy })); } break;
-        case 'ArrowRight': if (dx === 0) { dx = 1; dy = 0; ws.send(JSON.stringify({ type: 'move', playerId, dx, dy })); } break;
+        case 'ArrowUp': case 'w': dx = 0; dy = -1; break;
+        case 'ArrowDown': case 's': dx = 0; dy = 1; break;
+        case 'ArrowLeft': case 'a': dx = -1; dy = 0; break;
+        case 'ArrowRight': case 'd': dx = 1; dy = 0; break;
+        default: return;
     }
-});
-
-// Controles para toque (celular)
-canvas.addEventListener('touchstart', (e) => {
-    if (!playerId) return;
-    const touch = e.touches[0];
-    const centerX = canvas.width / 40;
-    const centerY = canvas.height / 40;
-    dx = (touch.clientX / 20 - centerX) > 0 ? 1 : -1;
-    dy = (touch.clientY / 20 - centerY) > 0 ? 1 : -1;
     ws.send(JSON.stringify({ type: 'move', playerId, dx, dy }));
-    e.preventDefault();
 });
 
-setInterval(draw, 100);
+// Loop principal do jogo no cliente (apenas para desenhar)
+setInterval(draw, 60);
