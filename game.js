@@ -37,18 +37,28 @@ ws.onerror = (error) => {
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Desenha todas as cobras
     for (let id in snakes) {
-        const snake = snakes[id];
+        const snake = snakes[id]; // Pequena correção aqui
         ctx.fillStyle = snake.color;
         snake.segments.forEach(seg => {
             ctx.fillRect(seg.x * TILE_SIZE, seg.y * TILE_SIZE, TILE_SIZE - 1, TILE_SIZE - 1);
         });
     }
+
+    // --- Alteração: Comida agora é um círculo ---
     ctx.fillStyle = 'red';
     foods.forEach(food => {
-        ctx.fillRect(food.x * TILE_SIZE, food.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        const centerX = food.x * TILE_SIZE + TILE_SIZE / 2;
+        const centerY = food.y * TILE_SIZE + TILE_SIZE / 2;
+        const radius = TILE_SIZE / 2;
+
+        ctx.beginPath(); // Começa a desenhar
+        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI); // Cria o arco (círculo)
+        ctx.fill(); // Preenche com a cor vermelha
     });
 }
+
 
 // --- Controles para Teclado (Computador) ---
 document.addEventListener('keydown', (e) => {
@@ -68,28 +78,29 @@ document.addEventListener('keydown', (e) => {
 let touchStartX = 0;
 let touchStartY = 0;
 
-canvas.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    // Use clientX/clientY para maior compatibilidade
+document.addEventListener('touchstart', (e) => {
+    if (e.target === canvas) {
+        e.preventDefault();
+    }
     touchStartX = e.changedTouches[0].clientX;
     touchStartY = e.changedTouches[0].clientY;
 }, { passive: false });
 
-canvas.addEventListener('touchend', (e) => {
-    e.preventDefault();
+document.addEventListener('touchend', (e) => {
+    if (e.target === canvas) {
+        e.preventDefault();
+    }
     if (!playerId) return;
 
-    // Use clientX/clientY para maior compatibilidade
     const touchEndX = e.changedTouches[0].clientX;
     const touchEndY = e.changedTouches[0].clientY;
-
     handleSwipe(touchEndX, touchEndY);
 }, { passive: false });
 
 function handleSwipe(touchEndX, touchEndY) {
     const deltaX = touchEndX - touchStartX;
     const deltaY = touchEndY - touchStartY;
-    const swipeThreshold = 30; // Diminuí um pouco o mínimo para ficar mais sensível
+    const swipeThreshold = 30;
 
     let dx = 0, dy = 0;
 
