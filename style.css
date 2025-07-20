@@ -1,0 +1,13 @@
+body {
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #000;
+    overflow: hidden;
+}
+#gameCanvas {
+    border: 1px solid #fff;
+    touch-action: none; /* Desativa scroll no toque */
+}
