@@ -1,16 +1,14 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// --- A LINHA ABAIXO FOI ATUALIZADA COM SEU ENDEREÇO ONLINE ---
 const ws = new WebSocket('wss://snake-online-3wex.onrender.com');
 
-const TILE_SIZE = 20; // Tamanho de cada "quadrado" do jogo
+const TILE_SIZE = 20;
 
 let playerId = null;
 let snakes = {};
 let foods = [];
 
-// Função para ajustar o tamanho do canvas
 function resizeCanvas() {
     canvas.width = Math.floor(window.innerWidth * 0.8 / TILE_SIZE) * TILE_SIZE;
     canvas.height = Math.floor(window.innerHeight * 0.8 / TILE_SIZE) * TILE_SIZE;
@@ -18,22 +16,12 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-
-// --- Conexão com o Servidor ---
-ws.onopen = () => {
-    console.log('Conectado ao servidor online com sucesso!');
-};
-
-ws.onclose = () => {
-    console.log('Desconectado do servidor.');
-};
-
+ws.onopen = () => console.log('Conectado ao servidor online com sucesso!');
+ws.onclose = () => console.log('Desconectado do servidor.');
 ws.onmessage = (event) => {
     try {
         const data = JSON.parse(event.data);
-        if (data.playerId) {
-            playerId = data.playerId;
-        }
+        if (data.playerId) playerId = data.playerId;
         if (data.snakes && data.foods) {
             snakes = data.snakes;
             foods = data.foods;
@@ -42,14 +30,11 @@ ws.onmessage = (event) => {
         console.error('Erro ao receber dados do servidor:', error);
     }
 };
-
 ws.onerror = (error) => {
     console.error('Erro no WebSocket:', error);
     alert('Não foi possível conectar ao servidor do jogo. O servidor pode estar offline ou reiniciando.');
 };
 
-
-// --- Desenho do Jogo ---
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     for (let id in snakes) {
@@ -65,8 +50,7 @@ function draw() {
     });
 }
 
-
-// --- Controles do Jogador ---
+// --- Controles para Teclado (Computador) ---
 document.addEventListener('keydown', (e) => {
     if (!playerId) return;
     let dx = 0, dy = 0;
@@ -80,5 +64,50 @@ document.addEventListener('keydown', (e) => {
     ws.send(JSON.stringify({ type: 'move', playerId, dx, dy }));
 });
 
-// Loop principal do jogo no cliente (apenas para desenhar)
+// --- Controles para Toque/Deslize (Celular) ---
+let touchStartX = 0;
+let touchStartY = 0;
+
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    // Use clientX/clientY para maior compatibilidade
+    touchStartX = e.changedTouches[0].clientX;
+    touchStartY = e.changedTouches[0].clientY;
+}, { passive: false });
+
+canvas.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    if (!playerId) return;
+
+    // Use clientX/clientY para maior compatibilidade
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+
+    handleSwipe(touchEndX, touchEndY);
+}, { passive: false });
+
+function handleSwipe(touchEndX, touchEndY) {
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = touchEndY - touchStartY;
+    const swipeThreshold = 30; // Diminuí um pouco o mínimo para ficar mais sensível
+
+    let dx = 0, dy = 0;
+
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        if (Math.abs(deltaX) > swipeThreshold) {
+            dx = (deltaX > 0) ? 1 : -1;
+            dy = 0;
+        }
+    } else {
+        if (Math.abs(deltaY) > swipeThreshold) {
+            dx = 0;
+            dy = (deltaY > 0) ? 1 : -1;
+        }
+    }
+
+    if (dx !== 0 || dy !== 0) {
+        ws.send(JSON.stringify({ type: 'move', playerId, dx, dy }));
+    }
+}
+
 setInterval(draw, 60);
