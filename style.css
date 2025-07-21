@@ -17,6 +17,8 @@ body {
     color: var(--text-color); 
 }
 
+/* ... (Todo o CSS anterior continua igual até aqui) ... */
+
 #login-screen { display: flex; flex-direction: column; align-items: center; gap: 20px; }
 #login-title { color: var(--primary-color); font-size: 3.5em; text-shadow: 0 0 7px var(--primary-color), 0 0 10px var(--primary-color); margin-bottom: 10px; }
 #name-input { padding: 10px 15px; font-size: 1.2em; border-radius: 5px; border: 2px solid var(--primary-color); background-color: rgba(44, 11, 77, 0.5); color: var(--text-color); text-align: center; }
@@ -31,6 +33,7 @@ body {
   flex-direction: row;
   align-items: center;
   gap: 40px;
+  position: relative; /* Necessário para posicionar o joystick */
 }
 
 #gameCanvas {
@@ -40,79 +43,55 @@ body {
     touch-action: none;
 }
 
-#game-title {
-    color: var(--primary-color);
-    font-size: 2.5em;
-    margin: 0;
-    margin-bottom: 15px;
-    text-shadow: 0 0 7px var(--primary-color);
-    text-align: center;
-}
-
-#player-count {
-    color: var(--text-color);
-    font-size: 1em;
-    margin: -10px 0 15px 0;
-    text-align: center;
-}
-
-#sidebar-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-#leaderboard-container {
-    width: 250px;
-    padding: 20px;
-    border: 2px solid var(--primary-color);
-    border-radius: 10px;
-    box-shadow: 0 0 15px var(--primary-color);
-    background-color: rgba(0, 0, 0, 0.2);
-}
-
-#leaderboard-container h2 {
-    text-align: center;
-    margin-top: 0;
-    color: var(--primary-color);
-    text-shadow: 0 0 7px var(--primary-color);
-}
-
-#leaderboard {
-    list-style: decimal;
-    padding-left: 30px;
-    font-size: 1.1em;
-    text-align: left;
-    color: var(--text-color);
-}
-
-#leaderboard li {
-    margin-bottom: 8px;
-}
-
-#developer-signature {
-    margin-top: 10px;
-    font-size: 0.8em;
-    color: rgba(255, 245, 225, 0.5);
-    user-select: none;
-    text-align: center;
-}
+#game-title { color: var(--primary-color); font-size: 2.5em; margin: 0; margin-bottom: 15px; text-shadow: 0 0 7px var(--primary-color); text-align: center; }
+#player-count { color: var(--text-color); font-size: 1em; margin: -10px 0 15px 0; text-align: center; }
+#sidebar-container { display: flex; flex-direction: column; align-items: center; }
+#leaderboard-container { width: 250px; padding: 20px; border: 2px solid var(--primary-color); border-radius: 10px; box-shadow: 0 0 15px var(--primary-color); background-color: rgba(0, 0, 0, 0.2); }
+#leaderboard-container h2 { text-align: center; margin-top: 0; color: var(--primary-color); text-shadow: 0 0 7px var(--primary-color); }
+#leaderboard { list-style: decimal; padding-left: 30px; font-size: 1.1em; text-align: left; color: var(--text-color); }
+#leaderboard li { margin-bottom: 8px; }
+#developer-signature { margin-top: 10px; font-size: 0.8em; color: rgba(255, 245, 225, 0.5); user-select: none; text-align: center; }
 
 @media (max-width: 1100px) {
-    #app-container {
-        flex-direction: column;
-        gap: 20px;
-    }
-    #leaderboard-container {
-        width: 80%;
-    }
+    #app-container { flex-direction: column; gap: 20px; }
+    #leaderboard-container { width: 80%; }
+    #leaderboard-container h2 { font-size: 1.4em; white-space: nowrap; }
+}
 
-    /* --- CORREÇÃO DEFINITIVA COM TESTE --- */
-    #leaderboard-container h2 {
-        font-size: 1.4em;
-        white-space: nowrap; /* Força o texto a ficar em uma única linha */
-        
-        /* LINHA DE TESTE: Se o fundo ficar vermelho, o CSS novo carregou */
-        background-color: red; 
+
+/* --- ALTERAÇÃO AQUI: Estilos para o Joystick --- */
+#joystick-container {
+    position: absolute;
+    bottom: 30px;
+    left: 30px;
+    z-index: 20;
+    /* Esconde o joystick em telas grandes (com mouse) */
+    display: none; 
+}
+
+#joystick-base {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+}
+
+#joystick-stick {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+}
+
+/* Mostra o joystick apenas em telas de toque (geralmente celulares/tablets) */
+@media (pointer: coarse) {
+    #joystick-container {
+        display: block;
     }
 }
