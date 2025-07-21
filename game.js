@@ -25,15 +25,11 @@ function getPlayerId() {
 }
 const playerId = getPlayerId();
 
-// --- LÓGICA DO BOTÃO CORRIGIDA ---
 playButton.addEventListener('click', () => {
     const playerName = nameInput.value.trim();
     if (playerName) {
-        // 1. Esconde a tela de login e mostra o jogo IMEDIATAMENTE
-        loginScreen.classList.add('hidden');
-        appContainer.classList.remove('hidden');
-
-        // 2. Inicia a conexão com o servidor em segundo plano
+        playButton.disabled = true;
+        playButton.textContent = 'Conectando...';
         connectToServer(playerName);
     } else {
         alert('Por favor, digite um nome para jogar!');
@@ -41,25 +37,32 @@ playButton.addEventListener('click', () => {
 });
 
 function connectToServer(name) {
-    // Para testes locais. Lembre-se de trocar para a URL do Render ao publicar.
-    ws = new WebSocket('ws://localhost:8081');
+    // --- ALTERAÇÃO CRÍTICA AQUI: Apontando para o servidor online ---
+    ws = new WebSocket('wss://snake-online-3wex.onrender.com');
 
     ws.onopen = () => {
-        console.log('Conectado ao servidor! Enviando ID e nome...');
+        loginScreen.classList.add('hidden');
+        appContainer.classList.remove('hidden');
         ws.send(JSON.stringify({ type: 'join', playerId: playerId, name: name }));
     };
 
     ws.onclose = () => {
         console.log('Desconectado do servidor.');
         alert('Você foi desconectado do servidor.');
-        // Volta para a tela de login se a conexão cair
         loginScreen.classList.remove('hidden');
         appContainer.classList.add('hidden');
+        playButton.disabled = false;
+        playButton.textContent = 'Jogar';
     };
 
     ws.onmessage = (event) => {
         try {
             const data = JSON.parse(event.data);
+            if (data.type === 'join_error') {
+                alert(data.message);
+                ws.close();
+                return;
+            }
             snakes = data.snakes || {};
             foods = data.foods || [];
             if (data.playerCount !== undefined) {
@@ -68,17 +71,14 @@ function connectToServer(name) {
             if (data.ranking) {
                 updateLeaderboard(data.ranking);
             }
-        } catch (error) {
-            console.error('Erro ao receber dados do servidor:', error);
-        }
+        } catch (error) { console.error('Erro ao receber dados:', error); }
     };
 
     ws.onerror = (error) => {
         console.error('Erro no WebSocket:', error);
         alert('Não foi possível conectar ao servidor do jogo.');
-        // Volta para a tela de login se a conexão falhar
-        loginScreen.classList.remove('hidden');
-        appContainer.classList.add('hidden');
+        playButton.disabled = false;
+        playButton.textContent = 'Jogar';
     };
 }
 
@@ -98,8 +98,7 @@ function draw() {
     for (let id in snakes) {
         const snake = snakes[id];
         if (!snake || !snake.segments) continue;
-        
-        const score = snake.score !== undefined ? snake.score : 0;
+        const score = snake.score || 0;
         const displayText = `${snake.name}: ${score}`;
         ctx.fillStyle = 'white';
         ctx.font = `${TILE_SIZE * 0.6}px "Helvetica Neue", sans-serif`;
@@ -107,7 +106,6 @@ function draw() {
         const textX = snake.segments[0].x * TILE_SIZE + (TILE_SIZE / 2);
         const textY = snake.segments[0].y * TILE_SIZE - (TILE_SIZE * 0.4);
         ctx.fillText(displayText, textX, textY);
-
         snake.segments.forEach((seg, index) => {
             const centerX = seg.x * TILE_SIZE + TILE_SIZE / 2;
             const centerY = seg.y * TILE_SIZE + TILE_SIZE / 2;
@@ -125,7 +123,6 @@ function draw() {
             }
         });
     }
-
     ctx.fillStyle = 'red';
     foods.forEach(food => {
         const centerX = food.x * TILE_SIZE + TILE_SIZE / 2;
