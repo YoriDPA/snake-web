@@ -7,7 +7,14 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <main id="app-container">
+
+    <div id="login-screen">
+        <h1 id="login-title">Snake Multiplayer</h1>
+        <input type="text" id="name-input" placeholder="Digite seu nome" maxlength="15">
+        <button id="play-button">Jogar</button>
+    </div>
+
+    <main id="app-container" class="hidden">
         <h1 id="game-title">Yori</h1>
         <p id="player-count">Jogadores Online: <span id="count">0</span></p>
         <canvas id="gameCanvas"></canvas>
