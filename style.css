@@ -12,7 +12,7 @@ body {
     background-color: #010414;
     overflow: hidden;
     font-family: 'Helvetica Neue', sans-serif;
-    color: white; /* Define a cor padrão do texto para branco */
+    color: white; 
 }
 
 /* ... (código da tela de login continua igual) ... */
@@ -24,12 +24,15 @@ body {
 #play-button:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(0, 255, 255, 0.7); }
 .hidden { display: none !important; }
 
+
 /* --- LAYOUT DO JOGO ATUALIZADO --- */
 #app-container {
   display: flex;
-  flex-direction: row; /* Alinha o jogo e o ranking lado a lado */
+  flex-direction: row;
   align-items: center;
   gap: 40px;
+  /* ALTERAÇÃO AQUI: Necessário para posicionar a assinatura dentro dele */
+  position: relative; 
 }
 
 #gameCanvas {
@@ -54,7 +57,6 @@ body {
     text-align: center;
 }
 
-/* --- ALTERAÇÃO AQUI: Estilos para o Ranking --- */
 #leaderboard-container {
     width: 250px;
     padding: 10px 20px;
@@ -80,13 +82,32 @@ body {
     margin-bottom: 8px;
 }
 
+/* --- NOVO ESTILO ADICIONADO NO FINAL --- */
+
+#developer-signature {
+    position: absolute;
+    bottom: 10px; /* Distância do fundo */
+    right: 55px;  /* Distância da direita */
+    font-size: 0.8em;
+    color: rgba(255, 255, 255, 0.3); /* Branco com 30% de opacidade */
+    z-index: 10;
+    /* Isso garante que o texto não interfira com os cliques ou toques no canvas */
+    pointer-events: none; 
+    user-select: none;
+}
+
 /* Ajustes para celular */
 @media (max-width: 1100px) {
     #app-container {
-        flex-direction: column; /* Empilha em telas menores */
+        flex-direction: column;
         gap: 20px;
     }
     #leaderboard-container {
         width: 80%;
+    }
+    #developer-signature {
+        /* Ajusta a posição no celular para não ficar em cima do ranking */
+        bottom: auto;
+        top: 10px;
     }
 }
