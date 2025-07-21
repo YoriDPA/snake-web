@@ -12,65 +12,30 @@ body {
     background-color: #010414;
     overflow: hidden;
     font-family: 'Helvetica Neue', sans-serif;
+    color: white; /* Define a cor padrão do texto para branco */
 }
 
-/* --- TELA DE LOGIN --- */
-#login-screen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-}
-#login-title {
-    color: #e0f7fa;
-    font-size: 3.5em;
-    text-shadow: 0 0 7px #00ffff, 0 0 10px #00ffff;
-}
-#name-input {
-    padding: 10px 15px;
-    font-size: 1.2em;
-    border-radius: 5px;
-    border: 2px solid #00ffff;
-    background-color: #010414;
-    color: white;
-    text-align: center;
-}
-#name-input:focus {
-    outline: none;
-    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
-}
-#play-button {
-    padding: 10px 30px;
-    font-size: 1.5em;
-    color: #010414;
-    background-color: #00ffff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: all 0.2s ease-in-out;
-}
-#play-button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 20px rgba(0, 255, 255, 0.7);
-}
-.hidden {
-    display: none !important;
-}
+/* ... (código da tela de login continua igual) ... */
+#login-screen { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+#login-title { color: #e0f7fa; font-size: 3.5em; text-shadow: 0 0 7px #00ffff, 0 0 10px #00ffff; }
+#name-input { padding: 10px 15px; font-size: 1.2em; border-radius: 5px; border: 2px solid #00ffff; background-color: #010414; color: white; text-align: center; }
+#name-input:focus { outline: none; box-shadow: 0 0 15px rgba(0, 255, 255, 0.5); }
+#play-button { padding: 10px 30px; font-size: 1.5em; color: #010414; background-color: #00ffff; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: all 0.2s ease-in-out; }
+#play-button:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(0, 255, 255, 0.7); }
+.hidden { display: none !important; }
 
-
-/* --- LAYOUT DO JOGO --- */
+/* --- LAYOUT DO JOGO ATUALIZADO --- */
 #app-container {
   display: flex;
-  flex-direction: column;
+  flex-direction: row; /* Alinha o jogo e o ranking lado a lado */
   align-items: center;
+  gap: 40px;
 }
 
 #gameCanvas {
     border: 2px solid #00ffff;
     box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
     touch-action: none;
-    transition: all 0.3s ease-in-out;
 }
 
 #game-title {
@@ -79,8 +44,7 @@ body {
     margin: 0;
     margin-bottom: 15px;
     text-shadow: 0 0 7px #00ffff, 0 0 10px #00ffff;
-    -webkit-user-select: none;
-    user-select: none;
+    text-align: center;
 }
 
 #player-count {
@@ -90,27 +54,39 @@ body {
     text-align: center;
 }
 
-/* --- AJUSTES PARA CELULAR --- */
-@media (max-width: 800px) and (orientation: portrait) {
-    #app-container {
-        /* Permite que o canvas seja posicionado com margem */
-        display: block;
-        position: relative;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-    }
+/* --- ALTERAÇÃO AQUI: Estilos para o Ranking --- */
+#leaderboard-container {
+    width: 250px;
+    padding: 10px 20px;
+    border: 2px solid #00ffff;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+}
 
-    #game-title, #player-count {
-        position: static; /* Remove o posicionamento absoluto */
-        transform: none;
-        left: auto;
-        top: auto;
-        z-index: auto;
-        background-color: transparent; /* Remove o fundo semi-transparente */
-        padding: 0;
+#leaderboard-container h2 {
+    text-align: center;
+    margin-top: 0;
+    color: #e0f7fa;
+    text-shadow: 0 0 7px #00ffff;
+}
+
+#leaderboard {
+    list-style: decimal;
+    padding-left: 30px;
+    font-size: 1.1em;
+}
+
+#leaderboard li {
+    margin-bottom: 8px;
+}
+
+/* Ajustes para celular */
+@media (max-width: 1100px) {
+    #app-container {
+        flex-direction: column; /* Empilha em telas menores */
+        gap: 20px;
+    }
+    #leaderboard-container {
+        width: 80%;
     }
 }
