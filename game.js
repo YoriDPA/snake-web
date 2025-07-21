@@ -27,8 +27,8 @@ playButton.addEventListener('click', () => {
 });
 
 function connectToServer(name) {
-    // Conectando ao servidor LOCAL para testes
-    ws = new WebSocket('ws://localhost:8081');
+    // --- ALTERAÇÃO AQUI: Apontando para o servidor online no Render ---
+    ws = new WebSocket('wss://snake-online-3wex.onrender.com');
 
     ws.onopen = () => {
         console.log('Conectado ao servidor! Enviando nome...');
@@ -55,6 +55,7 @@ function connectToServer(name) {
 
     ws.onerror = (error) => {
         console.error('Erro no WebSocket:', error);
+        // Este é o alerta que você está vendo na imagem
         alert('Não foi possível conectar ao servidor do jogo.');
     };
 }
