@@ -36,7 +36,6 @@ server.on('connection', (ws) => {
                     snakes[connectionPlayerId] = {
                         name: data.name,
                         segments: [{ x: 10, y: 10 }],
-                        // --- ALTERAÇÃO AQUI: Cobra começa parada ---
                         dx: 0, dy: 0, 
                         score: 0,
                         growth: 0,
@@ -56,8 +55,6 @@ server.on('connection', (ws) => {
                     const snake = snakes[data.playerId];
                     if (snake) {
                         snake.lastActivityTime = Date.now();
-                        // Se a cobra estiver parada, qualquer movimento a inicia.
-                        // Se já estiver em movimento, impede a inversão de direção.
                         if ((snake.dx === 0 && snake.dy === 0) || (data.dx !== -snake.dx && data.dy !== -snake.dy)) {
                             snake.dx = data.dx;
                             snake.dy = data.dy;
@@ -79,13 +76,11 @@ server.on('connection', (ws) => {
 setInterval(() => {
     const now = Date.now();
     
-    // Gerencia a comida...
     foods = foods.filter(food => !food.createdAt || (now - food.createdAt < LOOT_FOOD_LIFETIME_MS));
     if (!foods.some(food => !food.createdAt)) {
         foods.push(createNewFood());
     }
 
-    // Verificação de Inatividade...
     for (const client of server.clients) {
         if (client.playerId && snakes[client.playerId]) {
             if (now - snakes[client.playerId].lastActivityTime > IDLE_TIMEOUT_MS) {
@@ -100,7 +95,6 @@ setInterval(() => {
 
     for (const id in snakes) {
         const snake = snakes[id];
-        // Se a cobra estiver parada, a posição futura é a mesma que a atual
         if (snake.dx === 0 && snake.dy === 0) {
             futureHeadPositions[id] = snake.segments[0];
         } else {
@@ -109,10 +103,8 @@ setInterval(() => {
         playerPositions[id] = snake.segments;
     }
 
-    // Detecção de colisões...
     for (const id in snakes) {
         const snake = snakes[id];
-        // Cobras paradas não colidem
         if (snake.dx === 0 && snake.dy === 0) continue;
 
         const head = futureHeadPositions[id];
@@ -127,13 +119,17 @@ setInterval(() => {
         }
     }
 
-    // Processa as mortes...
     playersToReset.forEach(id => {
         const deadSnake = snakes[id];
-        if (ranking[id] && deadSnake.score > deadSnake.highScore) { // Corrigido para deadSnake.highScore que não existe, deveria ser ranking[id].highScore
+        
+        // --- CORREÇÃO AQUI ---
+        // Compara a pontuação atual com a pontuação máxima guardada no ranking
+        if (ranking[id] && deadSnake.score > ranking[id].highScore) {
             ranking[id].highScore = deadSnake.score;
+            console.log(`Novo recorde para ${ranking[id].name}: ${ranking[id].highScore}`);
             saveRanking();
         }
+
         if (server.clients.size > 2) {
             deadSnake.segments.forEach(seg => {
                 foods.push({ x: seg.x, y: seg.y, createdAt: now });
@@ -142,17 +138,14 @@ setInterval(() => {
         deadSnake.segments = [{ x: Math.floor(Math.random() * GRID_WIDTH), y: Math.floor(Math.random() * GRID_HEIGHT) }];
         deadSnake.score = 0;
         deadSnake.growth = 0;
-        // A cobra renasce parada também
         deadSnake.dx = 0;
         deadSnake.dy = 0;
     });
 
-    // Move as cobras que não morreram...
     for (let id in snakes) {
         if (playersToReset.has(id)) continue;
         const snake = snakes[id];
         
-        // Só move se não estiver parada
         if (snake.dx !== 0 || snake.dy !== 0) {
             const head = futureHeadPositions[id];
             snake.segments.unshift(head);
