@@ -14,6 +14,7 @@ let TILE_SIZE;
 let ws;
 let snakes = {};
 let foods = [];
+let stars = [];
 
 function getPlayerId() {
     let playerId = localStorage.getItem('snakePlayerId');
@@ -25,43 +26,70 @@ function getPlayerId() {
 }
 const playerId = getPlayerId();
 
-// --- LÓGICA DO BOTÃO CORRIGIDA ---
 playButton.addEventListener('click', () => {
     const playerName = nameInput.value.trim();
-    if (playerName) {
-        // 1. Esconde a tela de login e mostra o jogo IMEDIATAMENTE
-        loginScreen.classList.add('hidden');
-        appContainer.classList.remove('hidden');
 
-        // 2. Inicia a conexão com o servidor em segundo plano
-        connectToServer(playerName);
-    } else {
+    // --- BLOCO DE VALIDAÇÃO DE NOME ---
+
+    // 1. Verifica se o nome não está vazio
+    if (!playerName) {
         alert('Por favor, digite um nome para jogar!');
+        return; // Para a execução
     }
+
+    // 2. Verifica se contém caracteres especiais (permite apenas letras, números e espaços)
+    const specialCharRegex = /^[a-zA-Z0-9\s]+$/;
+    if (!specialCharRegex.test(playerName)) {
+        alert('O nome não pode conter caracteres especiais (apenas letras, números e espaços).');
+        return; // Para a execução
+    }
+
+    // 3. Verifica se o nome está todo em maiúsculas (e se contém pelo menos uma letra)
+    const hasLetters = /[a-zA-Z]/.test(playerName);
+    if (hasLetters && playerName === playerName.toUpperCase()) {
+        alert('O nome não pode ser todo em letras maiúsculas.');
+        return; // Para a execução
+    }
+
+    // --- FIM DO BLOCO DE VALIDAÇÃO ---
+
+
+    // Se todas as regras passaram, continua para o jogo
+    playButton.disabled = true;
+    playButton.textContent = 'Conectando...';
+    connectToServer(playerName);
 });
 
 function connectToServer(name) {
-    // Para testes locais. Lembre-se de trocar para a URL do Render ao publicar.
-    ws = new WebSocket('ws://localhost:8081');
+    // Para testes locais, use: 'ws://localhost:8081'
+    ws = new WebSocket('wss://snake-online-3wex.onrender.com');
 
     ws.onopen = () => {
-        console.log('Conectado ao servidor! Enviando ID e nome...');
+        loginScreen.classList.add('hidden');
+        appContainer.classList.remove('hidden');
         ws.send(JSON.stringify({ type: 'join', playerId: playerId, name: name }));
     };
 
     ws.onclose = () => {
         console.log('Desconectado do servidor.');
         alert('Você foi desconectado do servidor.');
-        // Volta para a tela de login se a conexão cair
         loginScreen.classList.remove('hidden');
         appContainer.classList.add('hidden');
+        playButton.disabled = false;
+        playButton.textContent = 'Jogar';
     };
 
     ws.onmessage = (event) => {
         try {
             const data = JSON.parse(event.data);
+            if (data.type === 'join_error') {
+                alert(data.message);
+                ws.close();
+                return;
+            }
             snakes = data.snakes || {};
             foods = data.foods || [];
+            stars = data.stars || [];
             if (data.playerCount !== undefined) {
                 countElement.textContent = data.playerCount;
             }
@@ -76,17 +104,16 @@ function connectToServer(name) {
     ws.onerror = (error) => {
         console.error('Erro no WebSocket:', error);
         alert('Não foi possível conectar ao servidor do jogo.');
-        // Volta para a tela de login se a conexão falhar
-        loginScreen.classList.remove('hidden');
-        appContainer.classList.add('hidden');
+        playButton.disabled = false;
+        playButton.textContent = 'Jogar';
     };
 }
 
 function updateLeaderboard(ranking) {
     leaderboardElement.innerHTML = '';
     const sortedPlayers = Object.values(ranking).sort((a, b) => b.highScore - a.highScore);
-    const top5 = sortedPlayers.slice(0, 5);
-    top5.forEach(player => {
+    const top10 = sortedPlayers.slice(0, 10);
+    top10.forEach(player => {
         const li = document.createElement('li');
         li.textContent = `${player.name}: ${player.highScore}`;
         leaderboardElement.appendChild(li);
@@ -98,8 +125,7 @@ function draw() {
     for (let id in snakes) {
         const snake = snakes[id];
         if (!snake || !snake.segments) continue;
-        
-        const score = snake.score !== undefined ? snake.score : 0;
+        const score = snake.score || 0;
         const displayText = `${snake.name}: ${score}`;
         ctx.fillStyle = 'white';
         ctx.font = `${TILE_SIZE * 0.6}px "Helvetica Neue", sans-serif`;
@@ -107,7 +133,6 @@ function draw() {
         const textX = snake.segments[0].x * TILE_SIZE + (TILE_SIZE / 2);
         const textY = snake.segments[0].y * TILE_SIZE - (TILE_SIZE * 0.4);
         ctx.fillText(displayText, textX, textY);
-
         snake.segments.forEach((seg, index) => {
             const centerX = seg.x * TILE_SIZE + TILE_SIZE / 2;
             const centerY = seg.y * TILE_SIZE + TILE_SIZE / 2;
@@ -125,7 +150,6 @@ function draw() {
             }
         });
     }
-
     ctx.fillStyle = 'red';
     foods.forEach(food => {
         const centerX = food.x * TILE_SIZE + TILE_SIZE / 2;
@@ -133,6 +157,18 @@ function draw() {
         const radius = TILE_SIZE / 2;
         ctx.beginPath();
         ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+        ctx.fill();
+    });
+    stars.forEach(star => {
+        const centerX = star.x * TILE_SIZE + TILE_SIZE / 2;
+        const centerY = star.y * TILE_SIZE + TILE_SIZE / 2;
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, TILE_SIZE / 2, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, TILE_SIZE / 4, 0, 2 * Math.PI);
         ctx.fill();
     });
 }

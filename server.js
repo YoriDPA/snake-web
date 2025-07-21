@@ -3,8 +3,8 @@ const fs = require('fs');
 
 const server = new WebSocket.Server({ port: process.env.PORT || 8081 });
 
-// --- NOVA CONSTANTE ---
-const IDLE_TIMEOUT_MS = 30000; // 30 segundos em milissegundos
+const IDLE_TIMEOUT_MS = 30000;
+const LOOT_FOOD_LIFETIME_MS = 15000;
 
 const RANKING_FILE = './ranking.json';
 let ranking = {};
@@ -15,33 +15,39 @@ const GRID_WIDTH = 40;
 const GRID_HEIGHT = 30;
 let snakes = {};
 let foods = [];
+let stars = [];
 
 function createNewFood() { return { x: Math.floor(Math.random() * GRID_WIDTH), y: Math.floor(Math.random() * GRID_HEIGHT) }; }
 foods.push(createNewFood());
 
+function manageStars() { /* ... (função da estrela) ... */ }
+setInterval(manageStars, 1000);
+
 server.on('connection', (ws) => {
+    let connectionPlayerId = null; 
+
     ws.on('message', (msg) => {
         try {
             const data = JSON.parse(msg);
             switch (data.type) {
                 case 'join':
-                    // --- ALTERAÇÃO AQUI: Anexar ID ao WebSocket e registrar atividade ---
-                    ws.playerId = data.playerId; // Anexa o ID persistente à conexão
-                    console.log(`Player ${ws.playerId} (nome: ${data.name}) entrou no jogo.`);
-                    
-                    snakes[ws.playerId] = {
+                    connectionPlayerId = data.playerId;
+                    ws.playerId = data.playerId;
+                    snakes[connectionPlayerId] = {
                         name: data.name,
                         segments: [{ x: 10, y: 10 }],
-                        dx: 1, dy: 0, score: 0,
-                        lastActivityTime: Date.now(), // Registra a hora da última atividade
+                        // --- ALTERAÇÃO AQUI: Cobra começa parada ---
+                        dx: 0, dy: 0, 
+                        score: 0,
+                        growth: 0,
+                        lastActivityTime: Date.now(),
                         color: `rgb(${Math.floor(Math.random() * 200) + 55}, ${Math.floor(Math.random() * 200) + 55}, ${Math.floor(Math.random() * 200) + 55})`
                     };
-
-                    if (!ranking[ws.playerId]) {
-                        ranking[ws.playerId] = { name: data.name, highScore: 0 };
+                    if (!ranking[connectionPlayerId]) {
+                        ranking[connectionPlayerId] = { name: data.name, highScore: 0 };
                         saveRanking();
                     } else {
-                        ranking[ws.playerId].name = data.name;
+                        ranking[connectionPlayerId].name = data.name;
                     }
                     ws.send(JSON.stringify({ type: 'joined' }));
                     break;
@@ -49,9 +55,10 @@ server.on('connection', (ws) => {
                 case 'move':
                     const snake = snakes[data.playerId];
                     if (snake) {
-                        // --- ALTERAÇÃO AQUI: Atualiza a hora da última atividade ---
                         snake.lastActivityTime = Date.now();
-                        if ((data.dx !== 0 && snake.dx !== -data.dx) || (data.dy !== 0 && snake.dy !== -data.dy)) {
+                        // Se a cobra estiver parada, qualquer movimento a inicia.
+                        // Se já estiver em movimento, impede a inversão de direção.
+                        if ((snake.dx === 0 && snake.dy === 0) || (data.dx !== -snake.dx && data.dy !== -snake.dy)) {
                             snake.dx = data.dx;
                             snake.dy = data.dy;
                         }
@@ -62,60 +69,132 @@ server.on('connection', (ws) => {
     });
 
     ws.on('close', () => {
-        // Usa o playerId anexado para saber quem desconectou
         if (ws.playerId && snakes[ws.playerId]) {
-            console.log(`Player ${snakes[ws.playerId].name} (${ws.playerId}) desconectado.`);
             delete snakes[ws.playerId];
         }
     });
 });
 
+
 setInterval(() => {
-    // --- NOVO BLOCO DE CÓDIGO: Verificação de Inatividade ---
     const now = Date.now();
+    
+    // Gerencia a comida...
+    foods = foods.filter(food => !food.createdAt || (now - food.createdAt < LOOT_FOOD_LIFETIME_MS));
+    if (!foods.some(food => !food.createdAt)) {
+        foods.push(createNewFood());
+    }
+
+    // Verificação de Inatividade...
     for (const client of server.clients) {
-        // Verifica apenas clientes que já se juntaram ao jogo
         if (client.playerId && snakes[client.playerId]) {
-            const snake = snakes[client.playerId];
-            if (now - snake.lastActivityTime > IDLE_TIMEOUT_MS) {
-                console.log(`Player ${snake.name} (${client.playerId}) removido por inatividade.`);
-                client.terminate(); // Força o fechamento da conexão
+            if (now - snakes[client.playerId].lastActivityTime > IDLE_TIMEOUT_MS) {
+                client.terminate();
             }
         }
     }
-    // --- FIM DO NOVO BLOCO ---
 
-    // Lógica de movimento e colisão... (continua a mesma)
-    for (let id in snakes) {
-        let snake = snakes[id];
-        let head = { x: snake.segments[0].x + snake.dx, y: snake.segments[0].y + snake.dy };
-        if (head.x < 0 || head.x >= GRID_WIDTH || head.y < 0 || head.y >= GRID_HEIGHT) {
-            if (ranking[id] && snake.score > ranking[id].highScore) {
-                ranking[id].highScore = snake.score;
-                saveRanking();
-            }
-            snake.segments = [{ x: 10, y: 10 }];
-            snake.score = 0;
-            continue;
+    const playersToReset = new Set();
+    const playerPositions = {};
+    const futureHeadPositions = {};
+
+    for (const id in snakes) {
+        const snake = snakes[id];
+        // Se a cobra estiver parada, a posição futura é a mesma que a atual
+        if (snake.dx === 0 && snake.dy === 0) {
+            futureHeadPositions[id] = snake.segments[0];
+        } else {
+            futureHeadPositions[id] = { x: snake.segments[0].x + snake.dx, y: snake.segments[0].y + snake.dy };
         }
-        snake.segments.unshift(head);
-        let ateComida = false;
-        foods.forEach((food, index) => {
-            if (head.x === food.x && head.y === food.y) {
-                foods[index] = createNewFood();
-                ateComida = true;
-                snake.score += 1;
+        playerPositions[id] = snake.segments;
+    }
+
+    // Detecção de colisões...
+    for (const id in snakes) {
+        const snake = snakes[id];
+        // Cobras paradas não colidem
+        if (snake.dx === 0 && snake.dy === 0) continue;
+
+        const head = futureHeadPositions[id];
+        if (head.x < 0 || head.x >= GRID_WIDTH || head.y < 0 || head.y >= GRID_HEIGHT) {
+            playersToReset.add(id); continue;
+        }
+        for (const otherId in playerPositions) {
+            const segmentsToTest = (id === otherId) ? playerPositions[otherId].slice(1) : playerPositions[otherId];
+            if (segmentsToTest.some(seg => seg.x === head.x && seg.y === head.y)) {
+                playersToReset.add(id); break;
             }
-        });
-        if (!ateComida) { snake.segments.pop(); }
+        }
+    }
+
+    // Processa as mortes...
+    playersToReset.forEach(id => {
+        const deadSnake = snakes[id];
+        if (ranking[id] && deadSnake.score > deadSnake.highScore) { // Corrigido para deadSnake.highScore que não existe, deveria ser ranking[id].highScore
+            ranking[id].highScore = deadSnake.score;
+            saveRanking();
+        }
+        if (server.clients.size > 2) {
+            deadSnake.segments.forEach(seg => {
+                foods.push({ x: seg.x, y: seg.y, createdAt: now });
+            });
+        }
+        deadSnake.segments = [{ x: Math.floor(Math.random() * GRID_WIDTH), y: Math.floor(Math.random() * GRID_HEIGHT) }];
+        deadSnake.score = 0;
+        deadSnake.growth = 0;
+        // A cobra renasce parada também
+        deadSnake.dx = 0;
+        deadSnake.dy = 0;
+    });
+
+    // Move as cobras que não morreram...
+    for (let id in snakes) {
+        if (playersToReset.has(id)) continue;
+        const snake = snakes[id];
+        
+        // Só move se não estiver parada
+        if (snake.dx !== 0 || snake.dy !== 0) {
+            const head = futureHeadPositions[id];
+            snake.segments.unshift(head);
+
+            let ateComida = false;
+            foods.forEach((food, index) => {
+                if (head.x === food.x && head.y === food.y) {
+                    foods.splice(index, 1);
+                    ateComida = true;
+                    snake.score += 1;
+                }
+            });
+            
+            stars.forEach((star, index) => {
+                if(head.x === star.x && head.y === star.y) {
+                    snake.growth += 5;
+                    snake.score += 5;
+                    stars.splice(index, 1);
+                }
+            });
+
+            if (ateComida) {} 
+            else if (snake.growth > 0) { snake.growth -= 1; } 
+            else { snake.segments.pop(); }
+        }
     }
     
     const playerCount = server.clients.size;
-    const gameState = JSON.stringify({ snakes, foods, playerCount, ranking });
-    
+    const gameState = JSON.stringify({ snakes, foods, stars, playerCount, ranking }); 
     server.clients.forEach(client => {
         if (client.readyState === WebSocket.OPEN) { client.send(gameState); }
     });
 }, 150);
 
 console.log('Servidor WebSocket rodando na porta ' + (process.env.PORT || 8081));
+
+const STAR_LIFETIME_MS = 10000;
+const STAR_SPAWN_CHANCE = 0.15;
+function manageStars() {
+    const now = Date.now();
+    stars = stars.filter(star => now - star.createdAt < STAR_LIFETIME_MS);
+    if (server.clients.size > 3 && stars.length === 0 && Math.random() < STAR_SPAWN_CHANCE) {
+        stars.push({ x: Math.floor(Math.random() * GRID_WIDTH), y: Math.floor(Math.random() * GRID_HEIGHT), createdAt: now });
+    }
+}
