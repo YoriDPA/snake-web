@@ -1,6 +1,9 @@
 :root {
-    --el-color-white: #fff;
-    --el-color-black: #000;
+    /* --- TEMA: RETRÔ SUNSET --- */
+    --background-start: #2c0b4d; /* Roxo Escuro */
+    --background-end: #d94a6f;   /* Rosa/Magenta */
+    --primary-color: #feca57;    /* Amarelo Dourado */
+    --text-color: #fff5e1;       /* Branco "Creme" */
 }
 
 body {
@@ -9,19 +12,62 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
-    background-color: #010414;
+    background: linear-gradient(to bottom, var(--background-start), var(--background-end));
     overflow: hidden;
     font-family: 'Helvetica Neue', sans-serif;
-    color: white; 
+    color: var(--text-color); 
 }
 
 /* --- TELA DE LOGIN --- */
-#login-screen { display: flex; flex-direction: column; align-items: center; gap: 20px; }
-#login-title { color: #e0f7fa; font-size: 3.5em; text-shadow: 0 0 7px #00ffff, 0 0 10px #00ffff; }
-#name-input { padding: 10px 15px; font-size: 1.2em; border-radius: 5px; border: 2px solid #00ffff; background-color: #010414; color: white; text-align: center; }
-#name-input:focus { outline: none; box-shadow: 0 0 15px rgba(0, 255, 255, 0.5); }
-#play-button { padding: 10px 30px; font-size: 1.5em; color: #010414; background-color: #00ffff; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: all 0.2s ease-in-out; }
-#play-button:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(0, 255, 255, 0.7); }
+#login-screen { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    gap: 20px; 
+}
+#login-title { 
+    color: var(--primary-color);
+    font-size: 3.5em;
+    text-shadow: 0 0 7px var(--primary-color), 0 0 10px var(--primary-color);
+    margin-bottom: 10px;
+}
+#name-input { 
+    padding: 10px 15px; 
+    font-size: 1.2em; 
+    border-radius: 5px; 
+    border: 2px solid var(--primary-color); 
+    background-color: rgba(44, 11, 77, 0.5); 
+    color: var(--text-color); 
+    text-align: center; 
+}
+#name-input:focus { 
+    outline: none; 
+    box-shadow: 0 0 15px var(--primary-color);
+}
+#play-button { 
+    padding: 10px 30px; 
+    font-size: 1.5em; 
+    color: var(--background-start);
+    background-color: var(--primary-color); 
+    border: none; 
+    border-radius: 5px; 
+    cursor: pointer; 
+    font-weight: bold; 
+    transition: all 0.2s ease-in-out;
+}
+#play-button:hover { 
+    transform: scale(1.05); 
+    box-shadow: 0 0 20px var(--primary-color);
+}
+
+/* --- NOVO ESTILO PARA ASSINATURA NA TELA DE LOGIN --- */
+#developer-signature-login {
+    font-size: 0.9em;
+    color: rgba(255, 245, 225, 0.6); /* Branco "creme" com 60% de opacidade */
+    margin-top: 15px; /* Espaço para separá-lo do botão */
+    user-select: none;
+}
+
 .hidden { display: none !important; }
 
 
@@ -34,28 +80,29 @@ body {
 }
 
 #gameCanvas {
-    border: 2px solid #00ffff;
-    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+    border: 2px solid var(--primary-color);
+    box-shadow: 0 0 15px var(--primary-color);
+    background-color: rgba(0, 0, 0, 0.2); 
     touch-action: none;
 }
 
 #game-title {
-    color: #e0f7fa;
+    color: var(--primary-color);
     font-size: 2.5em;
     margin: 0;
     margin-bottom: 15px;
-    text-shadow: 0 0 7px #00ffff, 0 0 10px #00ffff;
+    text-shadow: 0 0 7px var(--primary-color);
     text-align: center;
 }
 
 #player-count {
-    color: #7fdee6;
+    color: var(--text-color);
     font-size: 1em;
     margin: -10px 0 15px 0;
     text-align: center;
 }
 
-/* --- ALTERAÇÃO AQUI: Novo container da barra lateral --- */
+/* --- BARRA LATERAL E RANKING --- */
 #sidebar-container {
     display: flex;
     flex-direction: column;
@@ -65,16 +112,17 @@ body {
 #leaderboard-container {
     width: 250px;
     padding: 20px;
-    border: 2px solid #00ffff;
+    border: 2px solid var(--primary-color);
     border-radius: 10px;
-    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+    box-shadow: 0 0 15px var(--primary-color);
+    background-color: rgba(0, 0, 0, 0.2);
 }
 
 #leaderboard-container h2 {
     text-align: center;
     margin-top: 0;
-    color: #e0f7fa;
-    text-shadow: 0 0 7px #00ffff;
+    color: var(--primary-color);
+    text-shadow: 0 0 7px var(--primary-color);
 }
 
 #leaderboard {
@@ -82,18 +130,19 @@ body {
     padding-left: 30px;
     font-size: 1.1em;
     text-align: left;
+    color: var(--text-color);
 }
 
 #leaderboard li {
     margin-bottom: 8px;
 }
 
-/* --- ESTILO DA ASSINATURA CORRIGIDO --- */
 #developer-signature {
-    margin-top: 10px; /* Pequeno espaço abaixo da caixa do ranking */
+    margin-top: 10px;
     font-size: 0.8em;
-    color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 245, 225, 0.5);
     user-select: none;
+    text-align: center;
 }
 
 /* --- AJUSTES PARA CELULAR --- */
